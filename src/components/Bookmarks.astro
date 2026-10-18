@@ -62,9 +62,140 @@
   //
   // Because this code lives in a client <script>, browser storage APIs are
   // safe to use here without breaking the static build.
+  const STORAGE_KEY = 'mona-bookmarks';
   const form = document.getElementById('add-bookmark');
+  const input = document.getElementById('url');
+  const bookmarkList = document.getElementById('bookmark-list');
+  const emptyState = document.getElementById('empty-state');
+  const listHeader = document.getElementById('list-header');
+  const clearAllButton = document.getElementById('clear-all');
+
+  function generateSlug() {
+    const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let value = Math.random().toString(36).slice(2, 10);
+    if (!value) {
+      value = 'mona';
+    }
+    return `mona-${value}`;
+  }
+
+  function readBookmarks() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveBookmarks(bookmarks) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
+  }
+
+  function renderBookmarks() {
+    const bookmarks = readBookmarks();
+
+    if (!bookmarkList || !emptyState || !listHeader || !clearAllButton) {
+      return;
+    }
+
+    bookmarkList.innerHTML = '';
+
+    if (bookmarks.length === 0) {
+      emptyState.hidden = false;
+      listHeader.hidden = true;
+      return;
+    }
+
+    emptyState.hidden = true;
+    listHeader.hidden = false;
+
+    bookmarks.forEach((bookmark) => {
+      const item = document.createElement('li');
+      item.className = 'bookmark';
+
+      const urlLink = document.createElement('a');
+      urlLink.className = 'url';
+      urlLink.href = bookmark.url;
+      urlLink.target = '_blank';
+      urlLink.rel = 'noopener noreferrer';
+      urlLink.textContent = bookmark.url;
+
+      const slugBadge = document.createElement('span');
+      slugBadge.className = 'slug';
+      slugBadge.textContent = bookmark.slug;
+
+      const copyButton = document.createElement('button');
+      copyButton.type = 'button';
+      copyButton.className = 'copy';
+      copyButton.textContent = 'Copy';
+      copyButton.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(bookmark.slug);
+          copyButton.textContent = 'Copied';
+          window.setTimeout(() => {
+            copyButton.textContent = 'Copy';
+          }, 1200);
+        } catch {
+          copyButton.textContent = 'Copy failed';
+          window.setTimeout(() => {
+            copyButton.textContent = 'Copy';
+          }, 1200);
+        }
+      });
+
+      item.append(urlLink, slugBadge, copyButton);
+      bookmarkList.appendChild(item);
+    });
+  }
+
   form?.addEventListener('submit', (event) => {
-    event.preventDefault(); // keep this — stops the page from reloading
-    // Implement in Step 3.
+    event.preventDefault();
+
+    const rawUrl = input instanceof HTMLInputElement ? input.value.trim() : '';
+    if (!rawUrl) {
+      return;
+    }
+
+    let value;
+    try {
+      value = new URL(rawUrl);
+      if (!value.protocol.startsWith('http')) {
+        throw new Error('Only http/https URLs are supported');
+      }
+    } catch {
+      if (input instanceof HTMLInputElement) {
+        input.setCustomValidity('Please enter a valid http or https URL.');
+        input.reportValidity();
+      }
+      return;
+    }
+
+    if (input instanceof HTMLInputElement) {
+      input.setCustomValidity('');
+    }
+
+    const bookmarks = readBookmarks();
+    const slug = generateSlug();
+    bookmarks.push({ url: value.toString(), slug });
+    saveBookmarks(bookmarks);
+    renderBookmarks();
+
+    if (input instanceof HTMLInputElement) {
+      input.value = '';
+      input.focus();
+    }
   });
+
+  clearAllButton?.addEventListener('click', () => {
+    const confirmed = window.confirm('Clear all saved bookmarks?');
+    if (!confirmed) {
+      return;
+    }
+
+    localStorage.removeItem(STORAGE_KEY);
+    renderBookmarks();
+  });
+
+  renderBookmarks();
 </script>
