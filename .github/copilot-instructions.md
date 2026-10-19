@@ -16,5 +16,5 @@ Project context Copilot should apply to every session in this repository.
 
 ## Persistence and hydration rules
 
-- Bookmarks are persisted in the browser with `localStorage`, so saved state survives page reloads without server-side storage.
-- Browser-only code must run behind a `client:load` boundary (or other client-only Astro execution path). Do not access `localStorage` or other browser APIs during SSR/static generation, because the static build must never touch browser-only code.
+- Persist bookmarks in the browser's `localStorage` under the `mona-bookmarks` key as validated `{ url, slug }` records. Treat stored data as untrusted and recover gracefully from malformed or legacy values.
+- Access browser-only APIs such as `localStorage` only from an Astro inline `<script>` or a `client:load` island. Never access them in frontmatter or code that runs during static rendering/build.
