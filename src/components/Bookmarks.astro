@@ -27,7 +27,6 @@
 
   <p class="hint">Paste a URL with or without <code>https://</code>.</p>
   <p id="bookmark-status" class="status" role="status" aria-live="polite"></p>
-
   <p id="empty-state" class="empty">No bookmarks yet — add your first link above.</p>
 
   <div id="list-header" class="list-header" hidden>
@@ -84,7 +83,6 @@
       link.rel = 'noopener noreferrer';
       link.textContent = bookmark.url;
 
-      const separator = document.createTextNode(' :: ');
       const slug = document.createElement('span');
       slug.className = 'slug';
       slug.textContent = bookmark.slug;
@@ -92,7 +90,7 @@
       const copyButton = document.createElement('button');
       copyButton.className = 'copy';
       copyButton.type = 'button';
-      copyButton.textContent = 'Copy slug';
+      copyButton.textContent = 'Copy';
       copyButton.setAttribute('aria-label', `Copy ${bookmark.slug}`);
       copyButton.addEventListener('click', async () => {
         try {
@@ -103,7 +101,7 @@
         }
       });
 
-      item.append(link, separator, slug, copyButton);
+      item.append(link, document.createTextNode(' :: '), slug, copyButton);
       list.append(item);
     }
 
@@ -138,11 +136,9 @@
       bookmarks = [...bookmarks, { url, slug }];
       renderBookmarks();
       urlInput.value = '';
-      if (persistBookmarks()) {
-        setStatus(`Saved ${formatBookmark({ url, slug })}.`);
-      } else {
-        setStatus('Bookmark added for this visit, but browser storage is unavailable.');
-      }
+      setStatus(persistBookmarks()
+        ? `Saved ${formatBookmark({ url, slug })}.`
+        : 'Bookmark added for this visit, but browser storage is unavailable.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Could not add this bookmark.');
     }
@@ -193,14 +189,10 @@
     letter-spacing: -0.04em;
   }
   .description { margin: 0.6rem 0 0; color: var(--muted); }
-
   form { margin-top: 1.5rem; }
   input { min-height: 3rem; }
   input:focus-visible { border-color: var(--manager-accent); }
-  button[type='submit'] {
-    min-height: 3rem;
-    background: var(--manager-accent);
-  }
+  button[type='submit'] { min-height: 3rem; background: var(--manager-accent); }
   .hint { margin-bottom: 1rem; }
   .hint code {
     padding: 0.1rem 0.3rem;
